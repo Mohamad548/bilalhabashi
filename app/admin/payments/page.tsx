@@ -312,10 +312,10 @@ export default function PaymentsPage() {
     const { memberId, amount, date, note } = pendingOverRepay;
     const createdAt = new Date().toISOString();
 
-    const doRepayment =
+    const doRepayment = (): Promise<void> =>
       repaymentAmount > 0
-        ? () =>
-            api.post<Payment>('/api/payments', {
+        ? api
+            .post<Payment>('/api/payments', {
               memberId,
               amount: repaymentAmount,
               date,
@@ -323,12 +323,13 @@ export default function PaymentsPage() {
               note: note ? `بازپرداخت — ${note}` : (contributionAmount > 0 ? 'بازپرداخت وام (مازاد به سپرده)' : 'بازپرداخت'),
               createdAt,
             })
-        : () => Promise.resolve();
+            .then(() => {})
+        : Promise.resolve();
 
-    const doContribution =
+    const doContribution = (): Promise<void> =>
       contributionAmount > 0
-        ? () =>
-            api.post<Payment>('/api/payments', {
+        ? api
+            .post<Payment>('/api/payments', {
               memberId,
               amount: contributionAmount,
               date,
@@ -336,7 +337,8 @@ export default function PaymentsPage() {
               note: note ? `مازاد وام به سپرده — ${note}` : 'مازاد وام به سپرده',
               createdAt: new Date().toISOString(),
             })
-        : () => Promise.resolve();
+            .then(() => {})
+        : Promise.resolve();
 
     doRepayment()
       .then(() => doContribution())
