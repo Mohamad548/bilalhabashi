@@ -22,6 +22,7 @@ export default function AdminSettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [avatar, setAvatar] = useState<string | null>(user?.avatar || null);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +69,26 @@ export default function AdminSettingsPage() {
       })
       .catch(() => setMessage({ type: 'error', text: 'خطا در ذخیره. دوباره تلاش کنید.' }))
       .finally(() => setSaving(false));
+  };
+
+  const handleResetDb = () => {
+    const confirmed = window.confirm(
+      'همهٔ داده‌ها (پرداخت‌ها، وام‌ها، موجودی صندوق و…) پاک می‌شوند و فقط لیست اعضا و کاربران باقی می‌ماند. آیا مطمئن هستید؟'
+    );
+    if (!confirmed) return;
+    setMessage(null);
+    setResetting(true);
+    api
+      .post<{ success: boolean; message: string }>('/api/admin/reset-db')
+      .then((res) => {
+        setMessage({ type: 'success', text: res.data.message ?? 'دیتابیس ریست شد.' });
+        setTimeout(() => window.location.href = '/admin', 1500);
+      })
+      .catch((err) => {
+        const msg = err.response?.data?.message ?? 'خطا در ریست. دوباره تلاش کنید.';
+        setMessage({ type: 'error', text: msg });
+      })
+      .finally(() => setResetting(false));
   };
 
   if (!user) {
@@ -169,6 +190,23 @@ export default function AdminSettingsPage() {
           </div>
         </Card>
       </form>
+
+      <Card variant="glass" className="border-amber-500/40 mt-6 bg-amber-500/5">
+        <h2 className="text-base font-semibold text-amber-200 mb-1">ریست دیتابیس</h2>
+        <p className="text-xs text-white/60 mb-4">
+          با زدن دکمهٔ زیر، همهٔ پرداخت‌ها، وام‌ها، موجودی صندوق و رسیدها پاک می‌شوند و فقط <strong>لیست اعضا و کاربران</strong> (با مبالغ صفر) باقی می‌ماند. این عمل قابل بازگشت نیست.
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={resetting}
+          loading={resetting}
+          onClick={handleResetDb}
+          className="bg-amber-500/25 text-amber-100 border-amber-500/50 hover:bg-amber-500/35 font-medium"
+        >
+          {resetting ? 'در حال ریست…' : 'ریست همهٔ اطلاعات (به‌جز اعضا)'}
+        </Button>
+      </Card>
     </div>
   );
 }
