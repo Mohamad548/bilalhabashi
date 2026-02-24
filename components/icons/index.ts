@@ -1,0 +1,15 @@
+export {
+  IconDashboard,
+  IconMembers,
+  IconPayments,
+  IconLoans,
+  IconDeposit,
+  IconFund,
+  IconReport,
+  IconSettings,
+  IconTelegram,
+  IconRequest,
+  IconMenu,
+  IconClose,
+  IconEdit,
+} from './NavIcons';
