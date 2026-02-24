@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/axios';
+import { getClientApiBase } from '@/lib/apiConfig';
 import { Card, Button, Input, Modal, FormattedNumberInput, DatePickerShamsi } from '@/components/ui';
 import { formatCurrency, formatDateShort } from '@/utils/format';
 import type { Payment, Member } from '@/types';
@@ -88,7 +89,7 @@ export default function MemberPaymentsDetailPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setApiBase(process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:3001`);
+    setApiBase(getClientApiBase());
   }, []);
 
   useEffect(() => {

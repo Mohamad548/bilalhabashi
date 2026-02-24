@@ -1,20 +1,13 @@
 import axios, { type AxiosInstance } from 'axios';
 import { STORAGE_KEYS } from '@/utils/constants';
-
-const API_PORT = process.env.NEXT_PUBLIC_API_PORT ? Number(process.env.NEXT_PUBLIC_API_PORT) : 3001;
+import { getClientApiBase } from './apiConfig';
 
 function getApiBaseURL(): string {
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:${API_PORT}`;
-    }
-  }
-  return process.env.NEXT_PUBLIC_API_URL || `http://localhost:${API_PORT}`;
+  return getClientApiBase();
 }
 
 export const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || `http://localhost:${API_PORT}`,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   headers: { 'Content-Type': 'application/json' },
 });
 
