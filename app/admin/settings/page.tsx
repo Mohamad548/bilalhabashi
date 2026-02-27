@@ -163,7 +163,7 @@ export default function AdminSettingsPage() {
         sendPaymentToAdmin,
         receiptMemberTemplate,
         receiptGroupTemplate,
-        manualPaymentGroupTemplate,
+        manualPaymentGroupTemplate: receiptGroupTemplate,
         broadcastWaitingTemplate,
         broadcastWaitingLineTemplate,
         loanRequestAdminTemplate,
@@ -453,7 +453,7 @@ export default function AdminSettingsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs text-white/70">متن پیام در کانال/گروه (تایید رسید)</label>
+                  <label className="block text-xs text-white/70">متن پیام در کانال/گروه (پرداخت — رسید و دستی)</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
                       { token: '{memberName}', label: 'نام عضو' },
@@ -498,54 +498,9 @@ export default function AdminSettingsPage() {
                     disabled={telegramLoading}
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-xs text-white/70">متن پیام در کانال/گروه (ثبت پرداخت دستی)</label>
-                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
-                    {[
-                      { token: '{memberName}', label: 'نام عضو' },
-                      { token: '{amount}', label: 'مبلغ' },
-                      { token: '{date}', label: 'تاریخ' },
-                    ].map(({ token, label }) => (
-                      <button
-                        key={token}
-                        type="button"
-                        onClick={() => setManualPaymentGroupTemplate((p) => p + token)}
-                        disabled={telegramLoading}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                    <span className="text-white/40 text-xs mx-0.5">|</span>
-                    <button
-                      type="button"
-                      onClick={() => setManualPaymentGroupTemplate((p) => p + '✓')}
-                      disabled={telegramLoading}
-                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
-                      title="تیک تایید"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setManualPaymentGroupTemplate((p) => p + '✗')}
-                      disabled={telegramLoading}
-                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
-                      title="ضرب"
-                    >
-                      ✗
-                    </button>
-                  </div>
-                  <textarea
-                    value={manualPaymentGroupTemplate}
-                    onChange={(e) => setManualPaymentGroupTemplate(e.target.value)}
-                    placeholder="پیش‌فرض: ✅ پرداخت عضو «{memberName}» به مبلغ {amount} تومان در تاریخ {date} در سیستم ثبت شد."
-                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
-                    disabled={telegramLoading}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-xs text-white/70">متن پیام انتشار لیست در انتظار وام (دکمه «انتشار در تلگرام»)</label>
+                <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                  <label className="block text-xs font-medium text-white/80">متن پیام انتشار لیست در انتظار وام (دکمه «انتشار در تلگرام»)</label>
+                  <p className="text-xs text-white/50 -mt-1">از {'{list}'} برای لیست افراد و {'{count}'} برای تعداد استفاده کنید.</p>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
                       { token: '{list}', label: 'لیست افراد' },
@@ -584,52 +539,8 @@ export default function AdminSettingsPage() {
                   <textarea
                     value={broadcastWaitingTemplate}
                     onChange={(e) => setBroadcastWaitingTemplate(e.target.value)}
-                    placeholder="خالی = پیش‌فرض. یا متن دلخواه با {list} و {count}، مثلاً: 📢 لیست در انتظار وام ({count} نفر):&#10;&#10;{list}"
+                    placeholder="خالی = پیش‌فرض. مثال: 📢 لیست در انتظار وام ({count} نفر):&#10;&#10;{list}"
                     className="w-full min-h-[80px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
-                    disabled={telegramLoading}
-                  />
-                  <label className="block text-xs text-white/70 mt-2">قالب هر خط (اختیاری) — برای ردیف و نام و تاریخ هر نفر</label>
-                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
-                    {[
-                      { token: '{row}', label: 'ردیف' },
-                      { token: '{name}', label: 'نام' },
-                      { token: '{date}', label: 'تاریخ' },
-                    ].map(({ token, label }) => (
-                      <button
-                        key={token}
-                        type="button"
-                        onClick={() => setBroadcastWaitingLineTemplate((p) => p + token)}
-                        disabled={telegramLoading}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                    <span className="text-white/40 text-xs mx-0.5">|</span>
-                    <button
-                      type="button"
-                      onClick={() => setBroadcastWaitingLineTemplate((p) => p + '✓')}
-                      disabled={telegramLoading}
-                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
-                      title="تیک تایید"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBroadcastWaitingLineTemplate((p) => p + '✗')}
-                      disabled={telegramLoading}
-                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
-                      title="ضرب"
-                    >
-                      ✗
-                    </button>
-                  </div>
-                  <textarea
-                    value={broadcastWaitingLineTemplate}
-                    onChange={(e) => setBroadcastWaitingLineTemplate(e.target.value)}
-                    placeholder="خالی = پیش‌فرض. مثال: {row}. {name} – {date}"
-                    className="w-full min-h-[56px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
                     disabled={telegramLoading}
                   />
                 </div>
