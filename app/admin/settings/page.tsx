@@ -41,6 +41,7 @@ export default function AdminSettingsPage() {
   const [broadcastWaitingLineTemplate, setBroadcastWaitingLineTemplate] = useState('');
   const [loanRequestAdminTemplate, setLoanRequestAdminTemplate] = useState('');
   const [paymentAdminTemplate, setPaymentAdminTemplate] = useState('');
+  const [telegramTestChatLoading, setTelegramTestChatLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -333,15 +334,64 @@ export default function AdminSettingsPage() {
               labelClassName="text-white/70"
               disabled={telegramLoading}
             />
-            <Input
-              label="چت مدیر اصلی (اختیاری)"
-              value={telegramNotifyTarget}
-              onChange={(e) => setTelegramNotifyTarget(e.target.value)}
-              placeholder="مثال: @admin یا Chat ID عددی"
-              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
-              labelClassName="text-white/70"
-              disabled={telegramLoading}
-            />
+            <div className="space-y-2">
+              <label className="block text-xs text-white/70">چت مدیر اصلی (اختیاری)</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  value={telegramNotifyTarget}
+                  onChange={(e) => setTelegramNotifyTarget(e.target.value)}
+                  placeholder="مثال: @admin یا Chat ID عددی"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl flex-1"
+                  labelClassName="sr-only"
+                  disabled={telegramLoading}
+                />
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={telegramLoading}
+                    onClick={() => {
+                      api.get<{ ok: boolean; url?: string; message?: string }>('/api/telegram/bot-link').then((r) => {
+                        if (r.data.ok && r.data.url) window.open(r.data.url, '_blank', 'noopener');
+                        else setMessage({ type: 'error', text: r.data.message || 'دریافت لینک ربات ممکن نشد.' });
+                      }).catch(() => setMessage({ type: 'error', text: 'خطا در دریافت لینک ربات.' }));
+                    }}
+                  >
+                    برقراری با تلگرام
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={telegramLoading || telegramTestChatLoading}
+                    onClick={() => {
+                      const target = telegramNotifyTarget.trim();
+                      if (!target) {
+                        setMessage({ type: 'error', text: 'ابتدا چت مدیر اصلی را پر کنید.' });
+                        return;
+                      }
+                      setTelegramTestChatLoading(true);
+                      api.post<{ success: boolean; message?: string; error?: string }>('/api/telegram/test-admin-chat', { notifyTarget: target })
+                        .then((r) => {
+                          if (r.data.success) setMessage({ type: 'success', text: r.data.message || 'پیام تست ارسال شد.' });
+                          else setMessage({ type: 'error', text: r.data.error || 'ارسال ناموفق' });
+                        })
+                        .catch((err) => {
+                          const msg = err.response?.data?.error || err.message || 'خطا در تست اتصال';
+                          setMessage({ type: 'error', text: msg });
+                        })
+                        .finally(() => setTelegramTestChatLoading(false));
+                    }}
+                  >
+                    {telegramTestChatLoading ? 'در حال بررسی…' : 'بررسی اتصال'}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-white/50">
+                برای دریافت اعلان‌ها، مدیر باید یک بار «برقراری با تلگرام» را بزند و در ربات /start کند؛ سپس «بررسی اتصال» را بزنید.
+              </p>
+            </div>
           </div>
         )}
 
