@@ -39,7 +39,6 @@ export default function LoansPage() {
   const [waitingSearchQuery, setWaitingSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'settled'>('all');
   const [activeTab, setActiveTab] = useState<'waiting' | 'loans'>('waiting');
-  const [broadcastTarget, setBroadcastTarget] = useState('');
 
   const {
     register,
@@ -90,13 +89,6 @@ export default function LoansPage() {
       });
     }
   }, [addModalOpen, reset]);
-
-  // مقدار اولیه نام کانال/گروه برای انتشار لیست در انتظار وام (فقط سمت کلاینت)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem('loanBroadcastTarget') || '';
-    setBroadcastTarget(saved);
-  }, []);
 
   function toNum(v: string) {
     const n = Number(v);
@@ -304,22 +296,6 @@ export default function LoansPage() {
                 )}
               </div>
             </div>
-            <div className="w-full sm:w-auto sm:min-w-[220px] rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 px-3 py-2 flex items-center gap-2">
-              <span className="text-xs text-white/70 shrink-0">کانال/گروه:</span>
-              <input
-                type="text"
-                value={broadcastTarget}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setBroadcastTarget(v);
-                  if (typeof window !== 'undefined') {
-                    window.localStorage.setItem('loanBroadcastTarget', v);
-                  }
-                }}
-                placeholder="مثال: @sandoqq یا -100..."
-                className="w-full bg-transparent text-white placeholder:text-white/50 text-xs focus:outline-none"
-              />
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -334,9 +310,7 @@ export default function LoansPage() {
                 className="rounded-xl bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs px-3 py-1.5"
                 onClick={async () => {
                   try {
-                    await api.post('/api/loanRequests/broadcastWaiting', {
-                      target: broadcastTarget.trim() || undefined,
-                    });
+                    await api.post('/api/loanRequests/broadcastWaiting');
                     toast.success('لیست افراد در انتظار وام به تلگرام ارسال شد.');
                   } catch (e) {
                     toast.error('خطا در ارسال لیست به تلگرام.');

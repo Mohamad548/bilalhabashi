@@ -25,10 +25,22 @@ export default function AdminSettingsPage() {
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [telegramAdminTarget, setTelegramAdminTarget] = useState('');
+  const [telegramChannelTarget, setTelegramChannelTarget] = useState('');
+  const [telegramGroupTarget, setTelegramGroupTarget] = useState('');
   const [telegramNotifyTarget, setTelegramNotifyTarget] = useState('');
   const [telegramLoading, setTelegramLoading] = useState(true);
   const [telegramSaving, setTelegramSaving] = useState(false);
+  const [telegramTab, setTelegramTab] = useState<'general' | 'notifications' | 'messages'>('general');
+  const [messagesSubTab, setMessagesSubTab] = useState<'admin' | 'general'>('general');
+  const [sendLoanRequestToAdmin, setSendLoanRequestToAdmin] = useState(true);
+  const [sendPaymentToAdmin, setSendPaymentToAdmin] = useState(true);
+  const [receiptMemberTemplate, setReceiptMemberTemplate] = useState('');
+  const [receiptGroupTemplate, setReceiptGroupTemplate] = useState('');
+  const [manualPaymentGroupTemplate, setManualPaymentGroupTemplate] = useState('');
+  const [broadcastWaitingTemplate, setBroadcastWaitingTemplate] = useState('');
+  const [broadcastWaitingLineTemplate, setBroadcastWaitingLineTemplate] = useState('');
+  const [loanRequestAdminTemplate, setLoanRequestAdminTemplate] = useState('');
+  const [paymentAdminTemplate, setPaymentAdminTemplate] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -40,10 +52,37 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     api
-      .get<{ adminTarget: string; notifyTarget: string }>('/api/admin/telegram-settings')
+      .get<{
+        adminTarget: string;
+        adminChannelTarget: string;
+        adminGroupTarget: string;
+        notifyTarget: string;
+        sendReceiptMember: boolean;
+        sendReceiptGroup: boolean;
+        sendManualPaymentGroup: boolean;
+        sendLoanRequestToAdmin: boolean;
+        sendPaymentToAdmin: boolean;
+        receiptMemberTemplate: string;
+        receiptGroupTemplate: string;
+        manualPaymentGroupTemplate: string;
+        broadcastWaitingTemplate: string;
+        broadcastWaitingLineTemplate: string;
+        loanRequestAdminTemplate: string;
+        paymentAdminTemplate: string;
+      }>('/api/admin/telegram-settings')
       .then((res) => {
-        setTelegramAdminTarget(res.data.adminTarget || '');
+        setTelegramChannelTarget(res.data.adminChannelTarget || res.data.adminTarget || '');
+        setTelegramGroupTarget(res.data.adminGroupTarget || '');
         setTelegramNotifyTarget(res.data.notifyTarget || '');
+        setSendLoanRequestToAdmin(res.data.sendLoanRequestToAdmin);
+        setSendPaymentToAdmin(res.data.sendPaymentToAdmin);
+        setReceiptMemberTemplate(res.data.receiptMemberTemplate || '');
+        setReceiptGroupTemplate(res.data.receiptGroupTemplate || '');
+        setManualPaymentGroupTemplate(res.data.manualPaymentGroupTemplate || '');
+        setBroadcastWaitingTemplate(res.data.broadcastWaitingTemplate || '');
+        setBroadcastWaitingLineTemplate(res.data.broadcastWaitingLineTemplate || '');
+        setLoanRequestAdminTemplate(res.data.loanRequestAdminTemplate || '');
+        setPaymentAdminTemplate(res.data.paymentAdminTemplate || '');
       })
       .catch(() => {
         // نادیده گرفتن خطا؛ بخش تلگرام اختیاری است
@@ -113,8 +152,22 @@ export default function AdminSettingsPage() {
     setTelegramSaving(true);
     api
       .post('/api/admin/telegram-settings', {
-        adminTarget: telegramAdminTarget.trim(),
+        adminChannelTarget: telegramChannelTarget.trim(),
+        adminGroupTarget: telegramGroupTarget.trim(),
         notifyTarget: telegramNotifyTarget.trim(),
+        sendReceiptMember: true,
+        sendReceiptGroup: true,
+        sendManualPaymentGroup: true,
+        sendLoanRequestGroup: true,
+        sendLoanRequestToAdmin,
+        sendPaymentToAdmin,
+        receiptMemberTemplate,
+        receiptGroupTemplate,
+        manualPaymentGroupTemplate,
+        broadcastWaitingTemplate,
+        broadcastWaitingLineTemplate,
+        loanRequestAdminTemplate,
+        paymentAdminTemplate,
       })
       .then(() => {
         setMessage({ type: 'success', text: 'تنظیمات تلگرام ذخیره شد.' });
@@ -227,27 +280,463 @@ export default function AdminSettingsPage() {
 
       <Card variant="glass" className="border-white/20 mt-4 space-y-4">
         <h2 className="text-sm font-semibold text-white">تنظیمات تلگرام</h2>
-        <p className="text-xs text-white/60">
-          در این بخش می‌توانید کانال یا گروه اعلانات صندوق و آیدی مدیر را برای ارسال خودکار پیام‌ها تنظیم کنید.
-        </p>
-        <Input
-          label="کانال / گروه اعلانات"
-          value={telegramAdminTarget}
-          onChange={(e) => setTelegramAdminTarget(e.target.value)}
-          placeholder="مثال: @sandoqq یا -1001234567890"
-          className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
-          labelClassName="text-white/70"
-          disabled={telegramLoading}
-        />
-        <Input
-          label="چت مدیر اصلی (اختیاری)"
-          value={telegramNotifyTarget}
-          onChange={(e) => setTelegramNotifyTarget(e.target.value)}
-          placeholder="مثال: @admin یا Chat ID عددی"
-          className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
-          labelClassName="text-white/70"
-          disabled={telegramLoading}
-        />
+        <div className="flex gap-1 rounded-2xl bg-white/5 border border-white/10 p-1 text-xs text-white/80">
+          <button
+            type="button"
+            onClick={() => setTelegramTab('general')}
+            className={`flex-1 rounded-xl px-3 py-2 transition-colors ${
+              telegramTab === 'general' ? 'bg-white/20 text-white' : 'hover:bg-white/10'
+            }`}
+          >
+            عمومی
+          </button>
+          <button
+            type="button"
+            onClick={() => setTelegramTab('notifications')}
+            className={`flex-1 rounded-xl px-3 py-2 transition-colors ${
+              telegramTab === 'notifications' ? 'bg-white/20 text-white' : 'hover:bg-white/10'
+            }`}
+          >
+            تنظیمات ارسالی
+          </button>
+          <button
+            type="button"
+            onClick={() => setTelegramTab('messages')}
+            className={`flex-1 rounded-xl px-3 py-2 transition-colors ${
+              telegramTab === 'messages' ? 'bg-white/20 text-white' : 'hover:bg-white/10'
+            }`}
+          >
+            متن‌های ارسالی
+          </button>
+        </div>
+
+        {telegramTab === 'general' && (
+          <div className="space-y-3">
+            <p className="text-xs text-white/60">
+              در این تب، مقصد ارسال پیام‌ها را تنظیم می‌کنید. ربات باید در کانال و گروه اعلانات عضو و ادمین باشد.
+            </p>
+            <Input
+              label="کانال اعلانات"
+              value={telegramChannelTarget}
+              onChange={(e) => setTelegramChannelTarget(e.target.value)}
+              placeholder="مثال: @sandoqq یا -1001234567890"
+              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+              labelClassName="text-white/70"
+              disabled={telegramLoading}
+            />
+            <Input
+              label="گروه اعلانات"
+              value={telegramGroupTarget}
+              onChange={(e) => setTelegramGroupTarget(e.target.value)}
+              placeholder="مثال: @group_username یا -1009876543210"
+              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+              labelClassName="text-white/70"
+              disabled={telegramLoading}
+            />
+            <Input
+              label="چت مدیر اصلی (اختیاری)"
+              value={telegramNotifyTarget}
+              onChange={(e) => setTelegramNotifyTarget(e.target.value)}
+              placeholder="مثال: @admin یا Chat ID عددی"
+              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+              labelClassName="text-white/70"
+              disabled={telegramLoading}
+            />
+          </div>
+        )}
+
+        {telegramTab === 'notifications' && (
+          <div className="space-y-4 text-xs text-white/80">
+            <p className="text-xs text-white/60">
+              مشخص کنید کدام اعلانات به چت مدیر اصلی (از تب «عمومی») از طریق ربات ارسال شوند.
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-white/30 bg-transparent"
+                  checked={sendLoanRequestToAdmin}
+                  onChange={(e) => setSendLoanRequestToAdmin(e.target.checked)}
+                  disabled={telegramLoading}
+                />
+                <span>ارسال اعلان درخواست وام به چت مدیر اصلی</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-white/30 bg-transparent"
+                  checked={sendPaymentToAdmin}
+                  onChange={(e) => setSendPaymentToAdmin(e.target.checked)}
+                  disabled={telegramLoading}
+                />
+                <span>ارسال اعلان پرداخت (رسید و دستی) به چت مدیر اصلی</span>
+              </label>
+            </div>
+            <p className="text-xs text-white/50 pt-1">
+              چت مدیر اصلی در تب «عمومی» تنظیم می‌شود.
+            </p>
+          </div>
+        )}
+
+        {telegramTab === 'messages' && (
+          <div className="space-y-4">
+            <div className="flex gap-1 rounded-xl bg-white/5 border border-white/10 p-1 text-xs text-white/80">
+              <button
+                type="button"
+                onClick={() => setMessagesSubTab('general')}
+                className={`flex-1 rounded-lg px-3 py-2 transition-colors ${
+                  messagesSubTab === 'general' ? 'bg-white/20 text-white' : 'hover:bg-white/10'
+                }`}
+              >
+                متن‌های ارسالی عمومی
+              </button>
+              <button
+                type="button"
+                onClick={() => setMessagesSubTab('admin')}
+                className={`flex-1 rounded-lg px-3 py-2 transition-colors ${
+                  messagesSubTab === 'admin' ? 'bg-white/20 text-white' : 'hover:bg-white/10'
+                }`}
+              >
+                متن‌های ارسالی ادمین (پیام اعلانات)
+              </button>
+            </div>
+
+            {messagesSubTab === 'general' && (
+              <div className="space-y-4">
+                <p className="text-xs text-white/60">
+                  پیام‌های ارسالی برای عضو به‌صورت شخصی یا در گروه/کانال. از دکمه‌های زیر می‌توانید متغیرها را درج کنید.
+                </p>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام به عضو (تایید رسید)</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{amount}', label: 'مبلغ' },
+                      { token: '{date}', label: 'تاریخ' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setReceiptMemberTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptMemberTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptMemberTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={receiptMemberTemplate}
+                    onChange={(e) => setReceiptMemberTemplate(e.target.value)}
+                    placeholder="پیش‌فرض: پرداخت شما به مبلغ {amount} تومان در تاریخ {date} در سیستم ثبت شد."
+                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام در کانال/گروه (تایید رسید)</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{amount}', label: 'مبلغ' },
+                      { token: '{date}', label: 'تاریخ' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setReceiptGroupTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptGroupTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceiptGroupTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={receiptGroupTemplate}
+                    onChange={(e) => setReceiptGroupTemplate(e.target.value)}
+                    placeholder="پیش‌فرض: ✅ پرداخت عضو «{memberName}» به مبلغ {amount} تومان در تاریخ {date} در سیستم ثبت شد."
+                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام در کانال/گروه (ثبت پرداخت دستی)</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{amount}', label: 'مبلغ' },
+                      { token: '{date}', label: 'تاریخ' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setManualPaymentGroupTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setManualPaymentGroupTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setManualPaymentGroupTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={manualPaymentGroupTemplate}
+                    onChange={(e) => setManualPaymentGroupTemplate(e.target.value)}
+                    placeholder="پیش‌فرض: ✅ پرداخت عضو «{memberName}» به مبلغ {amount} تومان در تاریخ {date} در سیستم ثبت شد."
+                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام انتشار لیست در انتظار وام (دکمه «انتشار در تلگرام»)</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{list}', label: 'لیست افراد' },
+                      { token: '{count}', label: 'تعداد' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setBroadcastWaitingTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastWaitingTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastWaitingTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={broadcastWaitingTemplate}
+                    onChange={(e) => setBroadcastWaitingTemplate(e.target.value)}
+                    placeholder="خالی = پیش‌فرض. یا متن دلخواه با {list} و {count}، مثلاً: 📢 لیست در انتظار وام ({count} نفر):&#10;&#10;{list}"
+                    className="w-full min-h-[80px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                  <label className="block text-xs text-white/70 mt-2">قالب هر خط (اختیاری) — برای ردیف و نام و تاریخ هر نفر</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{row}', label: 'ردیف' },
+                      { token: '{name}', label: 'نام' },
+                      { token: '{date}', label: 'تاریخ' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setBroadcastWaitingLineTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastWaitingLineTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastWaitingLineTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={broadcastWaitingLineTemplate}
+                    onChange={(e) => setBroadcastWaitingLineTemplate(e.target.value)}
+                    placeholder="خالی = پیش‌فرض. مثال: {row}. {name} – {date}"
+                    className="w-full min-h-[56px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+              </div>
+            )}
+
+            {messagesSubTab === 'admin' && (
+              <div className="space-y-4">
+                <p className="text-xs text-white/60">
+                  متن پیام‌هایی که به چت مدیر اصلی ارسال می‌شوند: اعلان درخواست وام و اعلان پرداخت (رسید و دستی).
+                </p>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام اعلان درخواست وام به چت مدیر اصلی</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{userName}', label: 'نام کاربر' },
+                      { token: '{chatId}', label: 'Chat ID' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setLoanRequestAdminTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setLoanRequestAdminTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLoanRequestAdminTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={loanRequestAdminTemplate}
+                    onChange={(e) => setLoanRequestAdminTemplate(e.target.value)}
+                    placeholder="خالی = پیش‌فرض. مثال: 📩 درخواست وام جدید از {userName} (Chat ID: {chatId})."
+                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs text-white/70">متن پیام اعلان پرداخت (رسید و دستی) به چت مدیر اصلی</label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
+                    {[
+                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{amount}', label: 'مبلغ' },
+                      { token: '{date}', label: 'تاریخ' },
+                    ].map(({ token, label }) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => setPaymentAdminTemplate((p) => p + token)}
+                        disabled={telegramLoading}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    <span className="text-white/40 text-xs mx-0.5">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentAdminTemplate((p) => p + '✓')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-green-500/20 text-green-300 border border-green-400/30 hover:bg-green-500/30 transition-colors"
+                      title="تیک تایید"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentAdminTemplate((p) => p + '✗')}
+                      disabled={telegramLoading}
+                      className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 transition-colors"
+                      title="ضرب"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <textarea
+                    value={paymentAdminTemplate}
+                    onChange={(e) => setPaymentAdminTemplate(e.target.value)}
+                    placeholder="خالی = همان متن کانال/گروه. مثال: ✅ پرداخت عضو «{memberName}» به مبلغ {amount} تومان در تاریخ {date} در سیستم ثبت شد."
+                    className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                    disabled={telegramLoading}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
