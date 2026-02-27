@@ -372,13 +372,14 @@ export default function AdminSettingsPage() {
                         return;
                       }
                       setTelegramTestChatLoading(true);
-                      api.post<{ success: boolean; message?: string; error?: string }>('/api/telegram/test-admin-chat', { notifyTarget: target })
+                      api.post<{ success: boolean; message?: string; error?: string; errorCode?: string }>('/api/telegram/test-admin-chat', { notifyTarget: target })
                         .then((r) => {
                           if (r.data.success) setMessage({ type: 'success', text: r.data.message || 'پیام تست ارسال شد.' });
                           else setMessage({ type: 'error', text: r.data.error || 'ارسال ناموفق' });
                         })
                         .catch((err) => {
-                          const msg = err.response?.data?.error || err.message || 'خطا در تست اتصال';
+                          const data = err.response?.data;
+                          const msg = data?.error || err.message || 'خطا در تست اتصال';
                           setMessage({ type: 'error', text: msg });
                         })
                         .finally(() => setTelegramTestChatLoading(false));
