@@ -370,7 +370,8 @@ export default function PaymentsPage() {
       .finally(() => setSubmitting(false));
   }
 
-  const getMemberName = (id: string) => members.find((m) => m.id === id)?.fullName || '—';
+  const getMemberName = (id: string) =>
+    members.find((m) => String(m.id) === String(id))?.fullName || '—';
 
   const filteredPayments = useMemo(() => {
     let list = payments;

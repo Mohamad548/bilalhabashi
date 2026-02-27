@@ -41,7 +41,8 @@ export default function DepositsPage() {
     [payments]
   );
 
-  const getMemberName = (id: string) => members.find((m) => m.id === id)?.fullName || '—';
+  const getMemberName = (id: string) =>
+    members.find((m) => String(m.id) === String(id))?.fullName || '—';
 
   /** لیست یکتای اعضا که حداقل یک واریز سپرده دارند + خلاصه برای هر عضو */
   const membersWithDeposits = useMemo(() => {

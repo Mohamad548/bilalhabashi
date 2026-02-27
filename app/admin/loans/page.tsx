@@ -163,7 +163,8 @@ export default function LoansPage() {
       .finally(() => setSettlingId(null));
   }
 
-  const getMemberName = (id: string) => members.find((m) => m.id === id)?.fullName || '—';
+  const getMemberName = (id: string) =>
+    members.find((m) => String(m.id) === String(id))?.fullName || '—';
 
   /** مجموع سپرده کل اعضا و سقف وام قابل اعطا (مجموع سپرده − مجموع مانده وام) */
   const { totalDeposits, loanCeiling } = useMemo(() => {
