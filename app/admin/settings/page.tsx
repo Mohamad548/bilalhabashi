@@ -25,6 +25,10 @@ export default function AdminSettingsPage() {
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [telegramAdminTarget, setTelegramAdminTarget] = useState('');
+  const [telegramNotifyTarget, setTelegramNotifyTarget] = useState('');
+  const [telegramLoading, setTelegramLoading] = useState(true);
+  const [telegramSaving, setTelegramSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -33,6 +37,19 @@ export default function AdminSettingsPage() {
       setAvatar(user.avatar || null);
     }
   }, [user?.id, user?.name, user?.username, user?.avatar]);
+
+  useEffect(() => {
+    api
+      .get<{ adminTarget: string; notifyTarget: string }>('/api/admin/telegram-settings')
+      .then((res) => {
+        setTelegramAdminTarget(res.data.adminTarget || '');
+        setTelegramNotifyTarget(res.data.notifyTarget || '');
+      })
+      .catch(() => {
+        // نادیده گرفتن خطا؛ بخش تلگرام اختیاری است
+      })
+      .finally(() => setTelegramLoading(false));
+  }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,6 +106,23 @@ export default function AdminSettingsPage() {
         setMessage({ type: 'error', text: msg });
       })
       .finally(() => setResetting(false));
+  };
+
+  const handleSaveTelegramSettings = () => {
+    setMessage(null);
+    setTelegramSaving(true);
+    api
+      .post('/api/admin/telegram-settings', {
+        adminTarget: telegramAdminTarget.trim(),
+        notifyTarget: telegramNotifyTarget.trim(),
+      })
+      .then(() => {
+        setMessage({ type: 'success', text: 'تنظیمات تلگرام ذخیره شد.' });
+      })
+      .catch(() => {
+        setMessage({ type: 'error', text: 'خطا در ذخیره تنظیمات تلگرام.' });
+      })
+      .finally(() => setTelegramSaving(false));
   };
 
   if (!user) {
@@ -190,6 +224,42 @@ export default function AdminSettingsPage() {
           </div>
         </Card>
       </form>
+
+      <Card variant="glass" className="border-white/20 mt-4 space-y-4">
+        <h2 className="text-sm font-semibold text-white">تنظیمات تلگرام</h2>
+        <p className="text-xs text-white/60">
+          در این بخش می‌توانید کانال یا گروه اعلانات صندوق و آیدی مدیر را برای ارسال خودکار پیام‌ها تنظیم کنید.
+        </p>
+        <Input
+          label="کانال / گروه اعلانات"
+          value={telegramAdminTarget}
+          onChange={(e) => setTelegramAdminTarget(e.target.value)}
+          placeholder="مثال: @sandoqq یا -1001234567890"
+          className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+          labelClassName="text-white/70"
+          disabled={telegramLoading}
+        />
+        <Input
+          label="چت مدیر اصلی (اختیاری)"
+          value={telegramNotifyTarget}
+          onChange={(e) => setTelegramNotifyTarget(e.target.value)}
+          placeholder="مثال: @admin یا Chat ID عددی"
+          className="bg-white/5 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+          labelClassName="text-white/70"
+          disabled={telegramLoading}
+        />
+        <div className="flex gap-2 pt-2">
+          <Button
+            type="button"
+            onClick={handleSaveTelegramSettings}
+            disabled={telegramSaving || telegramLoading}
+            loading={telegramSaving}
+            className="bg-white/20 text-white border border-white/30 hover:bg-white/30"
+          >
+            ذخیره تنظیمات تلگرام
+          </Button>
+        </div>
+      </Card>
 
       <Card variant="glass" className="border-amber-500/40 mt-6 bg-amber-500/5">
         <h2 className="text-base font-semibold text-amber-200 mb-1">ریست دیتابیس</h2>
