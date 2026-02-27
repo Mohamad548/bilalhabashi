@@ -6,9 +6,10 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 
 /** تبدیل رشته‌های مثل 01/01/1395 به 1395-01-01 */
-export function normalizeJoinDate(str: string): string {
-  if (!str || !str.trim()) return '';
-  const trimmed = str.trim();
+export function normalizeJoinDate(str: string | undefined | null): string {
+  const s = str != null ? String(str) : '';
+  if (!s.trim()) return '';
+  const trimmed = s.trim();
   if (trimmed.includes('/')) {
     const parts = trimmed.split('/').map((p) => p.trim());
     if (parts.length === 3) {

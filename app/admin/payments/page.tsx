@@ -135,15 +135,17 @@ export default function PaymentsPage() {
       toast.error('مبلغ را وارد کنید.');
       return;
     }
-    if (!data.memberId?.trim()) {
+    const rawMemberId = data.memberId != null ? String(data.memberId) : '';
+    const rawDate = data.date != null ? String(data.date) : '';
+    if (!rawMemberId.trim()) {
       toast.error('عضو را انتخاب کنید.');
       return;
     }
-    if (!data.date?.trim()) {
+    if (!rawDate.trim()) {
       toast.error('تاریخ را انتخاب کنید.');
       return;
     }
-    const memberId = data.memberId.trim();
+    const memberId = rawMemberId.trim();
     const activeLoans = (loans || []).filter((l) => l.memberId === memberId && l.status === 'active');
     const firstLoan = activeLoans[0];
     const installment = firstLoan
@@ -168,8 +170,8 @@ export default function PaymentsPage() {
         setPendingOverRepay({
           memberId,
           amount,
-          date: data.date.trim(),
-          note: data.note?.trim() || undefined,
+          date: rawDate.trim(),
+          note: data.note != null ? String(data.note).trim() || undefined : undefined,
         });
         setOverRepayModalOpen(true);
         return;
@@ -193,8 +195,8 @@ export default function PaymentsPage() {
       setPendingPayment({
         memberId,
         memberName,
-        date: data.date.trim(),
-        note: data.note?.trim() || undefined,
+        date: rawDate.trim(),
+        note: data.note != null ? String(data.note).trim() || undefined : undefined,
         installment,
         contributionAmount,
       });
@@ -203,8 +205,8 @@ export default function PaymentsPage() {
     }
 
     setSubmitting(true);
-    const date = data.date.trim();
-    const note = data.note?.trim() || undefined;
+    const date = rawDate.trim();
+    const note = data.note != null ? String(data.note).trim() || undefined : undefined;
     const createdAt = new Date().toISOString();
 
     const paymentType = data.type === 'contribution' ? 'contribution' : 'repayment';
