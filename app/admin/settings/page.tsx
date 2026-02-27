@@ -42,6 +42,7 @@ export default function AdminSettingsPage() {
   const [loanRequestAdminTemplate, setLoanRequestAdminTemplate] = useState('');
   const [paymentAdminTemplate, setPaymentAdminTemplate] = useState('');
   const [telegramTestChatLoading, setTelegramTestChatLoading] = useState(false);
+  const [telegramUnlinkLoading, setTelegramUnlinkLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -345,15 +346,16 @@ export default function AdminSettingsPage() {
                   labelClassName="sr-only"
                   disabled={telegramLoading}
                 />
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 shrink-0">
                   <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     disabled={telegramLoading}
                     onClick={() => {
-                      api.get<{ ok: boolean; url?: string; message?: string }>('/api/telegram/bot-link').then((r) => {
-                        if (r.data.ok && r.data.url) window.open(r.data.url, '_blank', 'noopener');
+                      api.get<{ ok: boolean; url?: string; linkAdmin?: string; message?: string }>('/api/telegram/bot-link').then((r) => {
+                        const link = r.data.ok ? (r.data.linkAdmin || (r.data.url ? r.data.url + '?start=admin' : '')) : '';
+                        if (link) window.open(link, '_blank', 'noopener');
                         else setMessage({ type: 'error', text: r.data.message || 'دریافت لینک ربات ممکن نشد.' });
                       }).catch(() => setMessage({ type: 'error', text: 'خطا در دریافت لینک ربات.' }));
                     }}
@@ -368,7 +370,7 @@ export default function AdminSettingsPage() {
                     onClick={() => {
                       const target = telegramNotifyTarget.trim();
                       if (!target) {
-                        setMessage({ type: 'error', text: 'ابتدا چت مدیر اصلی را پر کنید.' });
+                        setMessage({ type: 'error', text: 'ابتدا چت مدیر اصلی را پر کنید یا از دکمه «برقراری با تلگرام» استفاده کنید.' });
                         return;
                       }
                       setTelegramTestChatLoading(true);
@@ -387,10 +389,31 @@ export default function AdminSettingsPage() {
                   >
                     {telegramTestChatLoading ? 'در حال بررسی…' : 'بررسی اتصال'}
                   </Button>
+                  {telegramNotifyTarget.trim() ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      disabled={telegramLoading || telegramUnlinkLoading}
+                      onClick={() => {
+                        if (!confirm('چت مدیر اصلی قطع شود؟ اعلان‌ها دیگر به این چت ارسال نمی‌شوند.')) return;
+                        setTelegramUnlinkLoading(true);
+                        api.post('/api/telegram/unlink-admin')
+                          .then(() => {
+                            setTelegramNotifyTarget('');
+                            setMessage({ type: 'success', text: 'اتصال چت مدیر قطع شد.' });
+                          })
+                          .catch(() => setMessage({ type: 'error', text: 'خطا در قطع ارتباط.' }))
+                          .finally(() => setTelegramUnlinkLoading(false));
+                      }}
+                    >
+                      {telegramUnlinkLoading ? '…' : 'قطع ارتباط'}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
               <p className="text-xs text-white/50">
-                برای دریافت اعلان‌ها: «برقراری با تلگرام» را بزنید، در ربات /start کنید. در پیام خوش‌آمد ربات، <strong>شماره چت شما</strong> نمایش داده می‌شود؛ اگر با یوزرنیم (@...) خطا گرفتید، همان عدد را اینجا بگذارید و «بررسی اتصال» را بزنید.
+                با «برقراری با تلگرام» ربات باز می‌شود؛ دکمه <strong>شروع</strong> را بزنید تا شماره چت شما خودکار در سیستم ذخیره شود. سپس این صفحه را رفرش کنید. برای قطع اعلان‌ها به این چت، «قطع ارتباط» را بزنید.
               </p>
             </div>
           </div>
@@ -643,7 +666,7 @@ export default function AdminSettingsPage() {
                   <textarea
                     value={loanRequestAdminTemplate}
                     onChange={(e) => setLoanRequestAdminTemplate(e.target.value)}
-                    placeholder="خالی = پیش‌فرض. مثال: 📩 درخواست وام جدید از {userName} (Chat ID: {chatId})."
+                    placeholder="خالی = پیش‌فرض: «📩 {userName} درخواست وام دارد.» می‌فرستد. می‌توانید قالب دلخواه با {userName} و {chatId} بنویسید."
                     className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
                     disabled={telegramLoading}
                   />
