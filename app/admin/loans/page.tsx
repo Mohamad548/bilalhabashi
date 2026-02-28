@@ -7,7 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { api } from '@/lib/axios';
 import { Card, Button, Input, Modal, FormattedNumberInput, DatePickerShamsi, MemberSearchSelect } from '@/components/ui';
-import { formatCurrency, formatDateShort, addMonthsToDate } from '@/utils/format';
+import { formatCurrency, formatDateShort, formatDateShamsiFromIso, addMonthsToDate } from '@/utils/format';
 import type { Loan, Member, LoanRequest } from '@/types';
 
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -344,7 +344,7 @@ export default function LoansPage() {
                         {request.userName ? ` · @${request.userName}` : ''}
                       </p>
                       <p className="text-xs text-white/60">
-                        ثبت درخواست: {request.createdAt ? formatDateShort(String(request.createdAt).split('T')[0]) : '—'}
+                        ثبت درخواست: {formatDateShamsiFromIso(request.createdAt)}
                       </p>
                       {hasActiveLoan ? (
                         <p className="text-xs text-amber-300 mt-0.5">

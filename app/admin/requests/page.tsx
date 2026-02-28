@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { api } from '@/lib/axios';
 import { Card, Button, Modal } from '@/components/ui';
-import { formatDateShort } from '@/utils/format';
+import { formatDateShort, formatDateShamsiFromIso } from '@/utils/format';
 import type { LoanRequest, Member } from '@/types';
 
 const STATUS_OPTIONS = [
@@ -22,8 +22,8 @@ const statusLabel: Record<string, string> = {
 
 function formatRequestDate(iso?: string): { date: string; time: string } {
   if (!iso?.trim()) return { date: '—', time: '' };
-  const [d, t] = iso.split('T');
-  const date = formatDateShort(d);
+  const date = formatDateShamsiFromIso(iso);
+  const t = iso.includes('T') ? iso.split('T')[1] : '';
   const time = t ? t.slice(0, 5).replace(/\d/g, (c) => '۰۱۲۳۴۵۶۷۸۹'[Number(c)]) : '';
   return { date, time };
 }

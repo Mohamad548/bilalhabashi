@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { api } from '@/lib/axios';
 import { getClientApiBase } from '@/lib/apiConfig';
 import { Card, Button, Input, Modal, FormattedNumberInput, DatePickerShamsi, MemberSearchSelect } from '@/components/ui';
-import { formatCurrency, formatDateShort } from '@/utils/format';
+import { formatCurrency, formatDateShort, formatDateShamsiFromIso } from '@/utils/format';
 import type { Payment, Member, Loan, ReceiptSubmission } from '@/types';
 
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -608,7 +608,7 @@ export default function PaymentsPage() {
                   <div className="min-w-0 flex-1 flex flex-row items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-white">{rec.memberName}</span>
                     <span className="text-xs text-white/60">
-                      ارسال: {rec.createdAt ? new Date(rec.createdAt).toLocaleDateString('fa-IR') : '—'}
+                      ارسال: {formatDateShamsiFromIso(rec.createdAt)}
                     </span>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
