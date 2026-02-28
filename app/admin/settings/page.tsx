@@ -630,7 +630,8 @@ export default function AdminSettingsPage() {
                   <label className="block text-xs text-white/70">متن پیام اعلان درخواست وام به چت مدیر اصلی</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
-                      { token: '{userName}', label: 'نام کاربر' },
+                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{userName}', label: 'یوزرنیم تلگرام' },
                       { token: '{chatId}', label: 'Chat ID' },
                     ].map(({ token, label }) => (
                       <button
@@ -666,7 +667,7 @@ export default function AdminSettingsPage() {
                   <textarea
                     value={loanRequestAdminTemplate}
                     onChange={(e) => setLoanRequestAdminTemplate(e.target.value)}
-                    placeholder="خالی = پیش‌فرض: «📩 {userName} درخواست وام دارد.» می‌فرستد. می‌توانید قالب دلخواه با {userName} و {chatId} بنویسید."
+                    placeholder="خالی = پیش‌فرض: «📩 {memberName} درخواست وام دارد.» می‌فرستد. توکن‌ها: {memberName} نام عضو، {userName} یوزرنیم تلگرام، {chatId} شناسه چت."
                     className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
                     disabled={telegramLoading}
                   />
