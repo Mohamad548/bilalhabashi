@@ -41,6 +41,11 @@ export default function AdminSettingsPage() {
   const [broadcastWaitingLineTemplate, setBroadcastWaitingLineTemplate] = useState('');
   const [loanRequestAdminTemplate, setLoanRequestAdminTemplate] = useState('');
   const [paymentAdminTemplate, setPaymentAdminTemplate] = useState('');
+  const [reminderDaysBefore, setReminderDaysBefore] = useState('7, 3, 1');
+  const [sendReminderToMember, setSendReminderToMember] = useState(true);
+  const [sendOverdueListToAdmin, setSendOverdueListToAdmin] = useState(false);
+  const [sendOverdueListToGroup, setSendOverdueListToGroup] = useState(false);
+  const [sendOverdueListToMember, setSendOverdueListToMember] = useState(false);
   const [telegramTestChatLoading, setTelegramTestChatLoading] = useState(false);
   const [telegramUnlinkLoading, setTelegramUnlinkLoading] = useState(false);
 
@@ -71,6 +76,11 @@ export default function AdminSettingsPage() {
         broadcastWaitingLineTemplate: string;
         loanRequestAdminTemplate: string;
         paymentAdminTemplate: string;
+        reminderDaysBefore?: number[];
+        sendReminderToMember?: boolean;
+        sendOverdueListToAdmin?: boolean;
+        sendOverdueListToGroup?: boolean;
+        sendOverdueListToMember?: boolean;
       }>('/api/admin/telegram-settings')
       .then((res) => {
         setTelegramChannelTarget(res.data.adminChannelTarget || res.data.adminTarget || '');
@@ -85,6 +95,12 @@ export default function AdminSettingsPage() {
         setBroadcastWaitingLineTemplate(res.data.broadcastWaitingLineTemplate || '');
         setLoanRequestAdminTemplate(res.data.loanRequestAdminTemplate || '');
         setPaymentAdminTemplate(res.data.paymentAdminTemplate || '');
+        const days = res.data.reminderDaysBefore;
+        setReminderDaysBefore(Array.isArray(days) && days.length ? days.join(', ') : '7, 3, 1');
+        setSendReminderToMember(res.data.sendReminderToMember !== false);
+        setSendOverdueListToAdmin(res.data.sendOverdueListToAdmin === true);
+        setSendOverdueListToGroup(res.data.sendOverdueListToGroup === true);
+        setSendOverdueListToMember(res.data.sendOverdueListToMember === true);
       })
       .catch(() => {
         // نادیده گرفتن خطا؛ بخش تلگرام اختیاری است
@@ -170,6 +186,11 @@ export default function AdminSettingsPage() {
         broadcastWaitingLineTemplate,
         loanRequestAdminTemplate,
         paymentAdminTemplate,
+        reminderDaysBefore: reminderDaysBefore.split(/[,،\s]+/).map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n) && n >= 0),
+        sendReminderToMember,
+        sendOverdueListToAdmin,
+        sendOverdueListToGroup,
+        sendOverdueListToMember,
       })
       .then(() => {
         setMessage({ type: 'success', text: 'تنظیمات تلگرام ذخیره شد.' });
@@ -416,6 +437,74 @@ export default function AdminSettingsPage() {
                 با «برقراری با تلگرام» ربات باز می‌شود؛ دکمه <strong>شروع</strong> را بزنید تا شماره چت شما خودکار در سیستم ذخیره شود. سپس این صفحه را رفرش کنید. برای قطع اعلان‌ها به این چت، «قطع ارتباط» را بزنید.
               </p>
             </div>
+
+            <div className="border-t border-white/10 pt-4 mt-4 space-y-4">
+              <h3 className="text-sm font-medium text-white/90">زمان‌بندی ارسال پیام‌ها</h3>
+              <p className="text-xs text-white/60">
+                یادآوری قسط وام به عضو و ارسال لیست معوقین (کسانی که در تاریخ سررسید پرداخت نکرده‌اند) را تنظیم کنید.
+              </p>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3">
+                <p className="text-xs text-white/80 font-medium">یادآوری قسط به عضو (پی وی)</p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-white/30 bg-transparent"
+                    checked={sendReminderToMember}
+                    onChange={(e) => setSendReminderToMember(e.target.checked)}
+                    disabled={telegramLoading}
+                  />
+                  <span>ارسال یادآوری زمان قسط به پی وی شخصی عضو</span>
+                </label>
+                <div>
+                  <label className="block text-xs text-white/70 mb-1">در چه روزهایی قبل از سررسید ارسال شود؟ (عددها با کاما یا فاصله)</label>
+                  <input
+                    type="text"
+                    value={reminderDaysBefore}
+                    onChange={(e) => setReminderDaysBefore(e.target.value)}
+                    placeholder="مثال: 7, 3, 1"
+                    disabled={telegramLoading}
+                    className="w-full rounded-lg border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
+                  />
+                  <p className="text-xs text-white/50 mt-1">مثال: ۷ و ۳ و ۱ یعنی ۷ روز قبل، ۳ روز قبل و ۱ روز قبل از سررسید به عضو پیام یادآوری فرستاده می‌شود.</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3">
+                <p className="text-xs text-white/80 font-medium">لیست معوقین (سررسید گذشته، پرداخت نشده)</p>
+                <p className="text-xs text-white/60">هر روز یک بار لیست افرادی که در تاریخ سررسید قسط وام پرداخت نکرده‌اند به مقصدهای زیر ارسال می‌شود.</p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-white/30 bg-transparent"
+                    checked={sendOverdueListToAdmin}
+                    onChange={(e) => setSendOverdueListToAdmin(e.target.checked)}
+                    disabled={telegramLoading}
+                  />
+                  <span>ارسال لیست معوقین به چت مدیر اصلی</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-white/30 bg-transparent"
+                    checked={sendOverdueListToGroup}
+                    onChange={(e) => setSendOverdueListToGroup(e.target.checked)}
+                    disabled={telegramLoading}
+                  />
+                  <span>ارسال لیست معوقین به گروه/کانال اعلانات</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-white/30 bg-transparent"
+                    checked={sendOverdueListToMember}
+                    onChange={(e) => setSendOverdueListToMember(e.target.checked)}
+                    disabled={telegramLoading}
+                  />
+                  <span>ارسال به پی وی هر عضو معوق (یادآوری پرداخت نشده)</span>
+                </label>
+              </div>
+            </div>
           </div>
         )}
 
@@ -484,7 +573,7 @@ export default function AdminSettingsPage() {
                   <label className="block text-xs text-white/70">متن پیام به عضو (تایید رسید)</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
-                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{memberName}', label: 'نام و نام خانوادگی عضو' },
                       { token: '{amount}', label: 'مبلغ' },
                       { token: '{date}', label: 'تاریخ' },
                     ].map(({ token, label }) => (
@@ -530,7 +619,7 @@ export default function AdminSettingsPage() {
                   <label className="block text-xs text-white/70">متن پیام در کانال/گروه (پرداخت — رسید و دستی)</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
-                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{memberName}', label: 'نام و نام خانوادگی عضو' },
                       { token: '{amount}', label: 'مبلغ' },
                       { token: '{date}', label: 'تاریخ' },
                     ].map(({ token, label }) => (
@@ -626,11 +715,14 @@ export default function AdminSettingsPage() {
                 <p className="text-xs text-white/60">
                   متن پیام‌هایی که به چت مدیر اصلی ارسال می‌شوند: اعلان درخواست وام و اعلان پرداخت (رسید و دستی).
                 </p>
+                <p className="text-xs text-white/50 bg-white/5 rounded-lg p-2">
+                  مقدار <strong>{'{memberName}'}</strong> از فیلد «نام و نام خانوادگی» در صفحه اعضا می‌آید. برای نمایش نام کامل (مثلاً محمد محمودی)، در منوی اعضا هنگام افزودن/ویرایش عضو، نام و نام خانوادگی را کامل وارد کنید.
+                </p>
                 <div className="space-y-1">
                   <label className="block text-xs text-white/70">متن پیام اعلان درخواست وام به چت مدیر اصلی</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
-                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{memberName}', label: 'نام و نام خانوادگی عضو' },
                       { token: '{userName}', label: 'یوزرنیم تلگرام' },
                       { token: '{chatId}', label: 'Chat ID' },
                     ].map(({ token, label }) => (
@@ -667,7 +759,7 @@ export default function AdminSettingsPage() {
                   <textarea
                     value={loanRequestAdminTemplate}
                     onChange={(e) => setLoanRequestAdminTemplate(e.target.value)}
-                    placeholder="خالی = پیش‌فرض: «📩 {memberName} درخواست وام دارد.» می‌فرستد. توکن‌ها: {memberName} نام عضو، {userName} یوزرنیم تلگرام، {chatId} شناسه چت."
+                    placeholder="خالی = پیش‌فرض: «📩 {memberName} درخواست وام دارد.» می‌فرستد. توکن‌ها: {memberName} نام و نام خانوادگی عضو (از لیست اعضا)، {userName} یوزرنیم تلگرام، {chatId} شناسه چت."
                     className="w-full min-h-[72px] rounded-xl border border-white/20 bg-white/5 text-white text-xs px-3 py-2 placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/30"
                     disabled={telegramLoading}
                   />
@@ -676,7 +768,7 @@ export default function AdminSettingsPage() {
                   <label className="block text-xs text-white/70">متن پیام اعلان پرداخت (رسید و دستی) به چت مدیر اصلی</label>
                   <div className="flex flex-wrap gap-1.5 mb-1.5 items-center">
                     {[
-                      { token: '{memberName}', label: 'نام عضو' },
+                      { token: '{memberName}', label: 'نام و نام خانوادگی عضو' },
                       { token: '{amount}', label: 'مبلغ' },
                       { token: '{date}', label: 'تاریخ' },
                     ].map(({ token, label }) => (
