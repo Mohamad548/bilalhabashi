@@ -74,6 +74,8 @@ export default function PaymentsPage() {
   /** آدرس پایه API برای لود عکس رسید — در کلاینت از host فعلی گرفته می‌شود تا روی موبایل (از طریق IP شبکه) درست کار کند */
   const [apiBase, setApiBase] = useState('');
   const [receiptImageModal, setReceiptImageModal] = useState<{ imagePath: string; memberName: string } | null>(null);
+  /** برای پرداخت خانوادگی: ردیف‌های (عضو + مبلغ وام این عضو) */
+  const [approveFamilyRows, setApproveFamilyRows] = useState<{ memberId: string; amount: string }[]>([]);
 
   const {
     register,
@@ -400,24 +402,43 @@ export default function PaymentsPage() {
     [receiptSubmissions]
   );
 
-  const canSubmitApproveReceipt = approveReceiptId && toNum(approveAmount) > 0 && approveDate.trim().length > 0;
+  const approveReceiptRecord = useMemo(
+    () => (approveReceiptId ? receiptSubmissions.find((r) => r.id === approveReceiptId) ?? null : null),
+    [approveReceiptId, receiptSubmissions]
+  );
+  const isFamilyApprove = !!(approveReceiptRecord?.note?.trim());
+
+  const canSubmitApproveReceipt = isFamilyApprove
+    ? !!(
+        approveReceiptId &&
+        approveDate.trim().length > 0 &&
+        approveFamilyRows.length > 0 &&
+        approveFamilyRows.every((r) => r.memberId.trim() && toNum(r.amount) > 0)
+      )
+    : !!(approveReceiptId && toNum(approveAmount) > 0 && approveDate.trim().length > 0);
 
   function handleApproveReceipt() {
     if (!approveReceiptId || !canSubmitApproveReceipt) return;
-    const amount = toNum(approveAmount);
     setApproving(true);
+    const body = isFamilyApprove
+      ? {
+          items: approveFamilyRows.map((r) => ({ memberId: r.memberId.trim(), amount: toNum(r.amount) })),
+          date: approveDate.trim(),
+        }
+      : {
+          amount: toNum(approveAmount),
+          date: approveDate.trim(),
+          type: approveType === 'contribution_repayment' ? 'contribution_repayment' : approveType,
+        };
     api
-      .post(`/api/receipt-submissions/${approveReceiptId}/approve`, {
-        amount,
-        date: approveDate.trim(),
-        type: approveType === 'contribution_repayment' ? 'contribution_repayment' : approveType,
-      })
+      .post(`/api/receipt-submissions/${approveReceiptId}/approve`, body)
       .then(() => {
         toast.success('پرداخت ثبت شد و پیام به عضو و گروه ادمین ارسال شد.');
         setApproveReceiptId(null);
         setApproveAmount('');
         setApproveDate('');
         setApproveType('contribution');
+        setApproveFamilyRows([]);
         setApproveOverRepayModalOpen(false);
         setApproveInstallmentModalOpen(false);
         setApprovePendingInstallment(null);
@@ -433,6 +454,10 @@ export default function PaymentsPage() {
   /** اعتبارسنجی مانند مودال ثبت پرداخت جدید؛ در صورت نیاز مودال تأیید نمایش می‌دهد */
   function submitApproveReceiptClick() {
     if (!approveReceiptId || !canSubmitApproveReceipt) return;
+    if (isFamilyApprove) {
+      handleApproveReceipt();
+      return;
+    }
     const amount = toNum(approveAmount);
     const rec = receiptSubmissions.find((r) => r.id === approveReceiptId);
     if (!rec) return;
@@ -635,6 +660,7 @@ export default function PaymentsPage() {
                         setApproveAmount('');
                         setApproveDate('');
                         setApproveType('contribution');
+                        setApproveFamilyRows(rec.note?.trim() ? [{ memberId: '', amount: '' }, { memberId: '', amount: '' }] : []);
                       }}
                       className="rounded-xl bg-emerald-500/90 hover:bg-emerald-500 text-white border-0"
                     >
@@ -945,6 +971,7 @@ export default function PaymentsPage() {
           setApproveAmount('');
           setApproveDate('');
           setApproveType('contribution');
+          setApproveFamilyRows([]);
         }}
         title="ثبت پرداخت (تایید رسید)"
         size="sm"
@@ -960,6 +987,7 @@ export default function PaymentsPage() {
                 setApproveAmount('');
                 setApproveDate('');
                 setApproveType('contribution');
+                setApproveFamilyRows([]);
               }}
               className="bg-white/20 text-white border-white/30 hover:bg-white/30"
             >
@@ -980,48 +1008,132 @@ export default function PaymentsPage() {
       >
         <div className="space-y-3 text-sm text-white/90">
           {/* عکس رسید بالا مودال */}
-          {approveReceiptId && apiBase && (() => {
-            const rec = receiptSubmissions.find((r) => r.id === approveReceiptId);
-            return rec ? (
-              <div className="flex justify-center rounded-xl overflow-hidden border border-white/20 bg-black/20 max-h-40">
-                <img
-                  src={`${apiBase}/uploads/${rec.imagePath}`}
-                  alt={`رسید ${rec.memberName}`}
-                  className="max-w-full max-h-40 w-auto h-auto object-contain"
+          {approveReceiptId && apiBase && approveReceiptRecord && (
+            <div className="flex justify-center rounded-xl overflow-hidden border border-white/20 bg-black/20 max-h-40">
+              <img
+                src={`${apiBase}/uploads/${approveReceiptRecord.imagePath}`}
+                alt={`رسید ${approveReceiptRecord.memberName}`}
+                className="max-w-full max-h-40 w-auto h-auto object-contain"
+              />
+            </div>
+          )}
+          {isFamilyApprove && approveReceiptRecord?.note?.trim() && (
+            <div className="rounded-xl border border-white/20 bg-white/5 px-3 py-2">
+              <p className="text-xs text-white/60 mb-1">توضیحات / نام افراد تحت تکفل (ارسال‌شده توسط عضو)</p>
+              <p className="text-white/90">{approveReceiptRecord.note}</p>
+            </div>
+          )}
+          {isFamilyApprove ? (
+            <>
+              <p className="text-white/80">برای هر نفر تحت تکفل، عضو و مبلغ وام (قسط) این عضو را وارد کنید. پس از ثبت، به عضو در تلگرام و به گروه ادمین پیام ارسال می‌شود.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-white/20">
+                      <th className="text-right py-2 text-white/80 font-medium">نام عضو</th>
+                      <th className="text-right py-2 text-white/80 font-medium w-32">مبلغ وام (تومان)</th>
+                      <th className="w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approveFamilyRows.map((row, idx) => (
+                      <tr key={idx} className="border-b border-white/10">
+                        <td className="py-1.5">
+                          <MemberSearchSelect
+                            value={row.memberId}
+                            onChange={(val) => {
+                              setApproveFamilyRows((prev) => {
+                                const next = [...prev];
+                                next[idx] = { ...next[idx], memberId: val };
+                                return next;
+                              });
+                            }}
+                            members={members}
+                            placeholder="انتخاب عضو"
+                            className="min-w-[140px]"
+                          />
+                        </td>
+                        <td className="py-1.5">
+                          <FormattedNumberInput
+                            value={row.amount}
+                            onChange={(val) => {
+                              setApproveFamilyRows((prev) => {
+                                const next = [...prev];
+                                next[idx] = { ...next[idx], amount: val };
+                                return next;
+                              });
+                            }}
+                            placeholder="۰"
+                            className="w-full rounded-lg border border-white/20 bg-white/10 text-white px-2 py-1.5 text-sm"
+                          />
+                        </td>
+                        <td className="py-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setApproveFamilyRows((prev) => prev.filter((_, i) => i !== idx))}
+                            className="text-red-400 hover:text-red-300 text-xs p-1"
+                            title="حذف ردیف"
+                          >
+                            حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setApproveFamilyRows((prev) => [...prev, { memberId: '', amount: '' }])}
+                className="mt-1 bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                افزودن ردیف
+              </Button>
+              <div className="pt-1">
+                <DatePickerShamsi
+                  label="تاریخ پرداخت"
+                  value={approveDate}
+                  onChange={setApproveDate}
+                  placeholder="انتخاب تاریخ"
                 />
               </div>
-            ) : null;
-          })()}
-          <p className="text-white/80">مبلغ، تاریخ و نوع واریز را وارد کنید. پس از ثبت، به عضو در تلگرام و به گروه ادمین پیام ارسال می‌شود.</p>
-          <div>
-            <label className="block text-xs text-white/80 mb-1.5">مبلغ (تومان) <span className="text-red-400">*</span></label>
-            <FormattedNumberInput
-              value={approveAmount}
-              onChange={setApproveAmount}
-              placeholder="۰"
-              className="w-full rounded-xl border border-white/20 bg-white/10 text-white placeholder:text-white/50"
-            />
-          </div>
-          <div>
-            <DatePickerShamsi
-              label="تاریخ پرداخت"
-              value={approveDate}
-              onChange={setApproveDate}
-              placeholder="انتخاب تاریخ"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-xs text-white/80 mb-1.5">نوع واریزی</label>
-            <select
-              value={approveType}
-              onChange={(e) => setApproveType(e.target.value as PaymentTypeOption)}
-              className="w-full rounded-xl border border-white/20 bg-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/40"
-            >
-              <option value="contribution" className="bg-slate-800 text-white">سپرده</option>
-              <option value="repayment" className="bg-slate-800 text-white">قسط ماهانه</option>
-              <option value="contribution_repayment" className="bg-slate-800 text-white">سپرده / قسط ماهانه</option>
-            </select>
-          </div>
+            </>
+          ) : (
+            <>
+              <p className="text-white/80">مبلغ، تاریخ و نوع واریز را وارد کنید. پس از ثبت، به عضو در تلگرام و به گروه ادمین پیام ارسال می‌شود.</p>
+              <div>
+                <label className="block text-xs text-white/80 mb-1.5">مبلغ (تومان) <span className="text-red-400">*</span></label>
+                <FormattedNumberInput
+                  value={approveAmount}
+                  onChange={setApproveAmount}
+                  placeholder="۰"
+                  className="w-full rounded-xl border border-white/20 bg-white/10 text-white placeholder:text-white/50"
+                />
+              </div>
+              <div>
+                <DatePickerShamsi
+                  label="تاریخ پرداخت"
+                  value={approveDate}
+                  onChange={setApproveDate}
+                  placeholder="انتخاب تاریخ"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-white/80 mb-1.5">نوع واریزی</label>
+                <select
+                  value={approveType}
+                  onChange={(e) => setApproveType(e.target.value as PaymentTypeOption)}
+                  className="w-full rounded-xl border border-white/20 bg-white/10 text-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/40"
+                >
+                  <option value="contribution" className="bg-slate-800 text-white">سپرده</option>
+                  <option value="repayment" className="bg-slate-800 text-white">قسط ماهانه</option>
+                  <option value="contribution_repayment" className="bg-slate-800 text-white">سپرده / قسط ماهانه</option>
+                </select>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 
