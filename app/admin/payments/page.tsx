@@ -605,11 +605,18 @@ export default function PaymentsPage() {
                       />
                     )}
                   </button>
-                  <div className="min-w-0 flex-1 flex flex-row items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-white">{rec.memberName}</span>
-                    <span className="text-xs text-white/60">
-                      ارسال: {formatDateShamsiFromIso(rec.createdAt)}
-                    </span>
+                  <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                    <div className="flex flex-row items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-white">{rec.memberName}</span>
+                      <span className="text-xs text-white/60">
+                        ارسال: {formatDateShamsiFromIso(rec.createdAt)}
+                      </span>
+                    </div>
+                    {rec.note?.trim() && (
+                      <p className="text-xs text-white/70 mt-0.5">
+                        افراد تحت تکفل / توضیحات: {rec.note}
+                      </p>
+                    )}
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <Button

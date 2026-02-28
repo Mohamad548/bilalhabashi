@@ -71,7 +71,7 @@ export interface FundLogEntry {
   createdAt: string;
 }
 
-/** رسید پرداخت شخصی ارسالی از ربات تلگرام — در انتظار تایید ادمین */
+/** رسید پرداخت شخصی/خانوادگی ارسالی از ربات تلگرام — در انتظار تایید ادمین */
 export interface ReceiptSubmission {
   id: string;
   memberId: string;
@@ -80,4 +80,6 @@ export interface ReceiptSubmission {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   approvedAt?: string;
+  /** توضیحات / اسامی افراد تحت تکفل (پرداخت خانوادگی) */
+  note?: string;
 }
